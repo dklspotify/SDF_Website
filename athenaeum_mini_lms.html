@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Athenaeum Mini LMS — Library Management System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              850: '#172033',
+              900: '#0F172A',
+            }
+          },
+          boxShadow: {
+            'soft': '0 2px 10px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.04)',
+            'card': '0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05)',
+            'modal': '0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08)',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+    .book-card-hover {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .book-card-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Toast Notification Container (Replaces native alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Modal Backdrop & Container -->
+  <div id="modal-overlay" class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 transition-opacity">
+    <div id="modal-content" class="bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-md overflow-hidden animate-fade-in">
+      <!-- Dynamic Modal Inner HTML -->
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar (Hidden on Login Screen) -->
+  <header id="app-navbar" class="hidden sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs">
+          <i data-lucide="book-open" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="font-display font-bold text-slate-900 text-lg tracking-tight block leading-none">Athenaeum</span>
+          <span class="text-[11px] font-medium text-slate-500 tracking-wide uppercase">Mini LMS</span>
+        </div>
+      </div>
+
+      <!-- User Profile & Actions -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="hidden sm:flex flex-col items-end">
+          <span id="nav-user-name" class="text-sm font-semibold text-slate-800 leading-tight">Alex Rivera</span>
+          <span id="nav-user-email" class="text-xs text-slate-500">alex.rivera@university.edu</span>
+        </div>
+        <span id="nav-role-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+          <i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i>
+          Borrower
+        </span>
+        <button onclick="handleLogout()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer" title="Sign out">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Viewport -->
+  <main id="app-root" class="flex-1 flex flex-col">
+    <!-- Rendered dynamically by JS -->
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200/80 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-slate-700">Athenaeum Mini Library Management System</span>
+        <span>&bull;</span>
+        <span>Academic Assignment Build</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="hidden sm:inline text-slate-400">LocalStorage Sync Active</span>
+        <button onclick="confirmResetDemoData()" class="inline-flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 font-medium underline underline-offset-4 transition-colors cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          Reset Demo Data
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * ============================================================================
+     * ATHENAEUM MINI LMS — STATE & SEED DATA
+     * ============================================================================
+     */
+    const STORAGE_KEYS = {
+      BOOKS: 'athenaeum_lms_books_v1',
+      LOANS: 'athenaeum_lms_loans_v1',
+      SESSION: 'athenaeum_lms_session_v1'
+    };
+
+    // Helper to generate ISO date strings offset by N days from today
+    function getOffsetDateISO(daysOffset) {
+      const date = new Date();
+      date.setDate(date.getDate() + daysOffset);
+      return date.toISOString().split('T')[0];
+    }
+
+    // Cover visual presets by category for tasteful editorial thumbnails
+    const CATEGORY_STYLES = {
+      'Technology': {
+        gradient: 'from-indigo-600 via-blue-600 to-slate-800',
+        badge: 'bg-indigo-50 text-indigo-700 border-indigo-200/70',
+        icon: 'cpu'
+      },
+      'Fiction': {
+        gradient: 'from-emerald-600 via-teal-600 to-slate-800',
+        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/70',
+        icon: 'feather'
+      },
+      'Science': {
+        gradient: 'from-cyan-600 via-sky-600 to-slate-800',
+        badge: 'bg-cyan-50 text-cyan-700 border-cyan-200/70',
+        icon: 'atom'
+      },
+      'Design': {
+        gradient: 'from-violet-600 via-purple-600 to-slate-800',
+        badge: 'bg-violet-50 text-violet-700 border-violet-200/70',
+        icon: 'pen-tool'
+      },
+      'History': {
+        gradient: 'from-amber-600 via-orange-600 to-slate-800',
+        badge: 'bg-amber-50 text-amber-700 border-amber-200/70',
+        icon: 'landmark'
+      }
+    };
+
+    const INITIAL_BOOKS = [
+      {
+        id: 'bk-101',
+        title: 'Designing Data-Intensive Applications',
+        author: 'Martin Kleppmann',
+        isbn: '978-1449373320',
+        category: 'Technology',
+        totalCopies: 3
+      },
+      {
+        id: 'bk-102',
+        title: 'The Design of Everyday Things',
+        author: 'Don Norman',
+        isbn: '978-0465050659',
+        category: 'Design',
+        totalCopies: 2
+      },
+      {
+        id: 'bk-103',
+        title: 'Clean Code: Agile Software Craftsmanship',
+        author: 'Robert C. Martin',
+        isbn: '978-0132350884',
+        category: 'Technology',
+        totalCopies: 4
+      },
+      {
+        id: 'bk-104',
+        title: 'Project Hail Mary',
+        author: 'Andy Weir',
+        isbn: '978-0593135204',
+        category: 'Fiction',
+        totalCopies: 2
+      },
+      {
+        id: 'bk-105',
+        title: 'A Brief History of Time',
+        author: 'Stephen Hawking',
+        isbn: '978-0553380163',
+        category: 'Science',
+        totalCopies: 3
+      },
+      {
+        id: 'bk-106',
+        title: 'Sapiens: A Brief History of Humankind',
+        author: 'Yuval Noah Harari',
+        isbn: '978-0062316097',
+        category: 'History',
+        totalCopies: 2
+      },
+      {
+        id: 'bk-107',
+        title: 'Thinking with Type',
+        author: 'Ellen Lupton',
+        isbn: '978-1568989693',
+        category: 'Design',
+        totalCopies: 1
+      },
+      {
+        id: 'bk-108',
+        title: 'The Gene: An Intimate History',
+        author: 'Siddhartha Mukherjee',
+        isbn: '978-1476733524',
+        category: 'Science',
+        totalCopies: 2
+      },
+      {
+        id: 'bk-109',
+        title: 'Klara and the Sun',
+        author: 'Kazuo Ishiguro',
+        isbn: '978-0593318171',
+        category: 'Fiction',
+        totalCopies: 2
+      },
+      {
+        id: 'bk-110',
+        title: 'The Silk Roads: A New History of the World',
+        author: 'Peter Frankopan',
+        isbn: '978-1101912379',
+        category: 'History',
+        totalCopies: 2
+      }
+    ];
+
+    const INITIAL_LOANS = [
+      {
+        id: 'ln-5001',
+        bookId: 'bk-101',
+        borrowerName: 'Alex Rivera',
+        borrowerEmail: 'alex.rivera@university.edu',
+        borrowDate: getOffsetDateISO(-5),
+        dueDate: getOffsetDateISO(9),
+        returnDate: null,
+        status: 'active'
+      },
+      {
+        id: 'ln-5002',
+        bookId: 'bk-107',
+        borrowerName: 'Maya Lin',
+        borrowerEmail: 'maya.lin@university.edu',
+        borrowDate: getOffsetDateISO(-16),
+        dueDate: getOffsetDateISO(-2), // Overdue example
+        returnDate: null,
+        status: 'active'
+      },
+      {
+        id: 'ln-5003',
+        bookId: 'bk-104',
+        borrowerName: 'Alex Rivera',
+        borrowerEmail: 'alex.rivera@university.edu',
+        borrowDate: getOffsetDateISO(-24),
+        dueDate: getOffsetDateISO(-10),
+        returnDate: getOffsetDateISO(-12),
+        status: 'returned'
+      },
+      {
+        id: 'ln-5004',
+        bookId: 'bk-103',
+        borrowerName: 'Jordan Vance',
+        borrowerEmail: 'jordan.v@university.edu',
+        borrowDate: getOffsetDateISO(-3),
+        dueDate: getOffsetDateISO(11),
+        returnDate: null,
+        status: 'active'
+      }
+    ];
+
+    // Application Runtime State
+    let appState = {
+      books: [],
+      loans: [],
+      session: null, // { role: 'borrower' | 'staff', name: string, email: string }
+      loginTab: 'borrower', // 'borrower' | 'staff'
+      borrowerView: 'catalog', // 'catalog' | 'my-books'
+      staffView: 'inventory', // 'inventory' | 'circulation'
+      searchQuery: '',
+      selectedCategory: 'All',
+      staffSearchQuery: '',
+      loanFilter: 'all' // 'all' | 'active' | 'returned'
+    };
+
+    /**
+     * ============================================================================
+     * STORAGE & DATA INITIALIZATION
+     * ============================================================================
+     */
+    function loadState() {
+      try {
+        const storedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
+        const storedLoans = localStorage.getItem(STORAGE_KEYS.LOANS);
+        const storedSession = localStorage.getItem(STORAGE_KEYS.SESSION);
+
+        if (storedBooks) {
+          appState.books = JSON.parse(storedBooks);
+        } else {
+          appState.books = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+          saveBooks();
+        }
+
+        if (storedLoans) {
+          appState.loans = JSON.parse(storedLoans);
+        } else {
+          appState.loans = JSON.parse(JSON.stringify(INITIAL_LOANS));
+          saveLoans();
+        }
+
+        if (storedSession) {
+          appState.session = JSON.parse(storedSession);
+        }
+      } catch (err) {
+        console.error('Error loading localStorage:', err);
+        appState.books = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+        appState.loans = JSON.parse(JSON.stringify(INITIAL_LOANS));
+      }
+    }
+
+    function saveBooks() {
+      localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(appState.books));
+    }
+
+    function saveLoans() {
+      localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(appState.loans));
+    }
+
+    function saveSession() {
+      if (appState.session) {
+        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(appState.session));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+      }
+    }
+
+    /**
+     * ============================================================================
+     * DOMAIN HELPERS
+     * ============================================================================
+     */
+    function getBookById(bookId) {
+      return appState.books.find(b => b.id === bookId);
+    }
+
+    function getActiveLoansForBook(bookId) {
+      return appState.loans.filter(l => l.bookId === bookId && l.status === 'active');
+    }
+
+    function getAvailableCopies(book) {
+      const checkedOutCount = getActiveLoansForBook(book.id).length;
+      return Math.max(0, book.totalCopies - checkedOutCount);
+    }
+
+    function hasUserBorrowedBook(email, bookId) {
+      return appState.loans.some(
+        l => l.borrowerEmail.toLowerCase() === email.toLowerCase() &&
+             l.bookId === bookId &&
+             l.status === 'active'
+      );
+    }
+
+    function getDaysRemaining(dueDateStr) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(dueDateStr + 'T00:00:00');
+      const diffTime = due - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function formatDisplayDate(dateStr) {
+      if (!dateStr) return '—';
+      const date = new Date(dateStr + 'T00:00:00');
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * ============================================================================
+     * UI UTILITIES: TOASTS & MODALS
+     * ============================================================================
+     */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const styles = {
+        success: 'bg-slate-900 text-white border-slate-700',
+        error: 'bg-rose-600 text-white border-rose-500',
+        info: 'bg-indigo-600 text-white border-indigo-500'
+      };
+      const icons = {
+        success: 'check-circle-2',
+        error: 'alert-circle',
+        info: 'info'
+      };
+
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg text-sm font-medium animate-fade-in ${styles[type] || styles.success}`;
+      toast.innerHTML = `
+        <i data-lucide="${icons[type] || 'check-circle-2'}" class="w-4 h-4 shrink-0"></i>
+        <span class="flex-1">${escapeHTML(message)}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons({ root: toast });
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        toast.style.transition = 'all 0.2s ease';
+        setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+
+    function openModal(htmlContent) {
+      const overlay = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = htmlContent;
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      lucide.createIcons({ root: content });
+    }
+
+    function closeModal() {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+    }
+
+    // Close modal when clicking outside dialog card
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-overlay') {
+        closeModal();
+      }
+    });
+
+    function confirmResetDemoData() {
+      openModal(`
+        <div class="p-6">
+          <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-4">
+            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-display font-bold text-lg text-slate-900">Reset Demo Data?</h3>
+          <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+            This will restore the original 10 books and initial circulation records, clearing any custom additions or loans made during this session.
+          </p>
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button onclick="executeResetDemoData()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors cursor-pointer">
+              Reset Everything
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function executeResetDemoData() {
+      appState.books = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+      appState.loans = JSON.parse(JSON.stringify(INITIAL_LOANS));
+      saveBooks();
+      saveLoans();
+      closeModal();
+      renderApp();
+      showToast('Library catalog and loan logs restored to demo defaults.', 'info');
+    }
+
+    /**
+     * ============================================================================
+     * AUTHENTICATION HANDLERS
+     * ============================================================================
+     */
+    function switchLoginRoleTab(role) {
+      appState.loginTab = role;
+      renderApp();
+    }
+
+    function demoLogin(role) {
+      if (role === 'borrower') {
+        appState.session = {
+          role: 'borrower',
+          name: 'Alex Rivera',
+          email: 'alex.rivera@university.edu'
+        };
+      } else {
+        appState.session = {
+          role: 'staff',
+          name: 'Sarah Jenkins',
+          email: 'sarah.jenkins@athenaeum.edu'
+        };
+      }
+      saveSession();
+      renderApp();
+      showToast(`Welcome back, ${appState.session.name}!`, 'success');
+    }
+
+    function handleLoginSubmit(event) {
+      event.preventDefault();
+      const emailInput = document.getElementById('login-email').value.trim();
+      const nameInput = document.getElementById('login-name')?.value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+
+      if (!emailInput || !passwordInput) {
+        showToast('Please enter both email and password.', 'error');
+        return;
+      }
+
+      // Derive clean display name from input or email prefix
+      const derivedName = nameInput || emailInput.split('@')[0]
+        .replace(/[._-]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+      appState.session = {
+        role: appState.loginTab,
+        name: derivedName,
+        email: emailInput.toLowerCase()
+      };
+      saveSession();
+      renderApp();
+      showToast(`Signed in as ${derivedName} (${appState.loginTab === 'staff' ? 'Store Staff' : 'Borrower'})`, 'success');
+    }
+
+    function handleLogout() {
+      appState.session = null;
+      saveSession();
+      renderApp();
+      showToast('You have been signed out.', 'info');
+    }
+
+    /**
+     * ============================================================================
+     * BORROWER PORTAL ACTIONS
+     * ============================================================================
+     */
+    function setBorrowerView(view) {
+      appState.borrowerView = view;
+      renderApp();
+    }
+
+    function handleCatalogSearch(val) {
+      appState.searchQuery = val;
+      renderBorrowerContent();
+    }
+
+    function handleCategoryFilter(category) {
+      appState.selectedCategory = category;
+      renderApp();
+    }
+
+    function promptBorrowBook(bookId) {
+      const book = getBookById(bookId);
+      if (!book) return;
+
+      const available = getAvailableCopies(book);
+      if (available <= 0) {
+        showToast('No copies currently available.', 'error');
+        return;
+      }
+      if (hasUserBorrowedBook(appState.session.email, bookId)) {
+        showToast('You already have an active copy of this book.', 'error');
+        return;
+      }
+
+      const borrowDate = getOffsetDateISO(0);
+      const dueDate = getOffsetDateISO(14);
+
+      openModal(`
+        <div class="p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-600 flex items-center justify-center shrink-0">
+              <i data-lucide="book-check" class="w-5 h-5"></i>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <h3 class="font-display font-bold text-lg text-slate-900 mt-4">Confirm Book Checkout</h3>
+          <p class="text-sm text-slate-500 mt-1">Review your 14-day student lending summary below.</p>
+
+          <div class="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Book Title</span>
+              <p class="text-sm font-bold text-slate-900">${escapeHTML(book.title)}</p>
+              <p class="text-xs text-slate-500">by ${escapeHTML(book.author)} &bull; ISBN ${escapeHTML(book.isbn)}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
+              <div>
+                <span class="text-[11px] font-medium text-slate-400 block">Checkout Date</span>
+                <span class="text-xs font-semibold text-slate-800">${formatDisplayDate(borrowDate)}</span>
+              </div>
+              <div>
+                <span class="text-[11px] font-medium text-slate-400 block">Return Due Date</span>
+                <span class="text-xs font-bold text-indigo-600">${formatDisplayDate(dueDate)} (14 days)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button onclick="confirmBorrowBook('${book.id}')" class="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer">
+              Confirm Borrow
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function confirmBorrowBook(bookId) {
+      const book = getBookById(bookId);
+      if (!book || getAvailableCopies(book) <= 0) {
+        closeModal();
+        showToast('Book is no longer available.', 'error');
+        return;
+      }
+
+      const newLoan = {
+        id: 'ln-' + Date.now().toString().slice(-5),
+        bookId: book.id,
+        borrowerName: appState.session.name,
+        borrowerEmail: appState.session.email,
+        borrowDate: getOffsetDateISO(0),
+        dueDate: getOffsetDateISO(14),
+        returnDate: null,
+        status: 'active'
+      };
+
+      appState.loans.unshift(newLoan);
+      saveLoans();
+      closeModal();
+      renderApp();
+      showToast(`Checked out "${book.title}". Due ${formatDisplayDate(newLoan.dueDate)}.`, 'success');
+    }
+
+    function returnLoan(loanId) {
+      const loan = appState.loans.find(l => l.id === loanId);
+      if (!loan || loan.status === 'returned') return;
+
+      loan.status = 'returned';
+      loan.returnDate = getOffsetDateISO(0);
+      saveLoans();
+
+      const book = getBookById(loan.bookId);
+      renderApp();
+      showToast(`Returned "${book ? book.title : 'Book'}" to library inventory.`, 'success');
+    }
+
+    /**
+     * ============================================================================
+     * STORE STAFF (LIBRARIAN) ACTIONS
+     * ============================================================================
+     */
+    function setStaffView(view) {
+      appState.staffView = view;
+      renderApp();
+    }
+
+    function handleStaffSearch(val) {
+      appState.staffSearchQuery = val;
+      renderStaffContent();
+    }
+
+    function setLoanFilter(filter) {
+      appState.loanFilter = filter;
+      renderApp();
+    }
+
+    function openAddBookModal() {
+      openModal(`
+        <form onsubmit="handleAddBookSubmit(event)" class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 flex items-center justify-center">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+              </div>
+              <h3 class="font-display font-bold text-lg text-slate-900">Add New Catalog Book</h3>
+            </div>
+            <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Book Title *</label>
+              <input id="new-book-title" type="text" required placeholder="e.g. Introduction to Algorithms"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Author Name *</label>
+              <input id="new-book-author" type="text" required placeholder="e.g. Thomas H. Cormen"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ISBN *</label>
+                <input id="new-book-isbn" type="text" required placeholder="978-0262046305"
+                  class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+                <select id="new-book-category"
+                  class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                  <option value="Technology">Technology</option>
+                  <option value="Fiction">Fiction</option>
+                  <option value="Science">Science</option>
+                  <option value="Design">Design</option>
+                  <option value="History">History</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Total Stock Copies *</label>
+              <input id="new-book-copies" type="number" min="1" max="99" value="2" required
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer">
+              Add to Catalog
+            </button>
+          </div>
+        </form>
+      `);
+    }
+
+    function handleAddBookSubmit(event) {
+      event.preventDefault();
+      const title = document.getElementById('new-book-title').value.trim();
+      const author = document.getElementById('new-book-author').value.trim();
+      const isbn = document.getElementById('new-book-isbn').value.trim();
+      const category = document.getElementById('new-book-category').value;
+      const totalCopies = parseInt(document.getElementById('new-book-copies').value, 10);
+
+      if (!title || !author || !isbn || isNaN(totalCopies) || totalCopies < 1) {
+        showToast('Please fill out all fields accurately.', 'error');
+        return;
+      }
+
+      const newBook = {
+        id: 'bk-' + Date.now().toString().slice(-4),
+        title,
+        author,
+        isbn,
+        category,
+        totalCopies
+      };
+
+      appState.books.unshift(newBook);
+      saveBooks();
+      closeModal();
+      renderApp();
+      showToast(`Added "${title}" (${totalCopies} copies) to catalog.`, 'success');
+    }
+
+    function openEditCopiesModal(bookId) {
+      const book = getBookById(bookId);
+      if (!book) return;
+      const checkedOut = getActiveLoansForBook(book.id).length;
+
+      openModal(`
+        <form onsubmit="handleEditCopiesSubmit(event, '${book.id}')" class="p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-display font-bold text-lg text-slate-900">Update Stock Copies</h3>
+            <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <p class="text-sm font-medium text-slate-800">${escapeHTML(book.title)}</p>
+          <p class="text-xs text-slate-500 mb-4">Currently checked out: <strong class="text-slate-800">${checkedOut}</strong> ${checkedOut === 1 ? 'copy' : 'copies'}</p>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Total Inventory Copies (Min: ${Math.max(1, checkedOut)})</label>
+            <input id="edit-book-copies" type="number" min="${Math.max(1, checkedOut)}" max="99" value="${book.totalCopies}" required
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      `);
+    }
+
+    function handleEditCopiesSubmit(event, bookId) {
+      event.preventDefault();
+      const book = getBookById(bookId);
+      if (!book) return;
+
+      const checkedOut = getActiveLoansForBook(book.id).length;
+      const updatedCopies = parseInt(document.getElementById('edit-book-copies').value, 10);
+
+      if (isNaN(updatedCopies) || updatedCopies < checkedOut) {
+        showToast(`Total copies cannot be less than currently checked out (${checkedOut}).`, 'error');
+        return;
+      }
+
+      book.totalCopies = updatedCopies;
+      saveBooks();
+      closeModal();
+      renderApp();
+      showToast(`Updated "${book.title}" stock to ${updatedCopies} copies.`, 'success');
+    }
+
+    function promptDeleteBook(bookId) {
+      const book = getBookById(bookId);
+      if (!book) return;
+
+      const activeLoans = getActiveLoansForBook(bookId);
+      if (activeLoans.length > 0) {
+        showToast(`Cannot delete "${book.title}" while ${activeLoans.length} copy is checked out.`, 'error');
+        return;
+      }
+
+      openModal(`
+        <div class="p-6">
+          <div class="w-11 h-11 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-4">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-display font-bold text-lg text-slate-900">Remove Book from Catalog?</h3>
+          <p class="text-sm text-slate-600 mt-1.5">
+            Are you sure you want to permanently remove <strong class="text-slate-900">${escapeHTML(book.title)}</strong> from the library database?
+          </p>
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button onclick="confirmDeleteBook('${book.id}')" class="px-4 py-2 rounded-xl text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer">
+              Delete Book
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function confirmDeleteBook(bookId) {
+      const book = getBookById(bookId);
+      appState.books = appState.books.filter(b => b.id !== bookId);
+      saveBooks();
+      closeModal();
+      renderApp();
+      showToast(`Removed "${book ? book.title : 'Book'}" from catalog.`, 'info');
+    }
+
+    function openManualCheckoutModal() {
+      const availableBooks = appState.books.filter(b => getAvailableCopies(b) > 0);
+      if (availableBooks.length === 0) {
+        showToast('No available books in inventory to issue.', 'error');
+        return;
+      }
+
+      const bookOptions = availableBooks.map(b => 
+        `<option value="${b.id}">${escapeHTML(b.title)} (${getAvailableCopies(b)} avail.)</option>`
+      ).join('');
+
+      openModal(`
+        <form onsubmit="handleManualCheckoutSubmit(event)" class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center">
+                <i data-lucide="user-plus" class="w-5 h-5"></i>
+              </div>
+              <h3 class="font-display font-bold text-lg text-slate-900">Desk Manual Checkout</h3>
+            </div>
+            <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Select Available Book *</label>
+              <select id="manual-book-id" required
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                ${bookOptions}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Student / Borrower Name *</label>
+              <input id="manual-borrower-name" type="text" required placeholder="e.g. Liam O'Connor"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Student Email *</label>
+              <input id="manual-borrower-email" type="email" required placeholder="liam.oconnor@university.edu"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer">
+              Issue 14-Day Loan
+            </button>
+          </div>
+        </form>
+      `);
+    }
+
+    function handleManualCheckoutSubmit(event) {
+      event.preventDefault();
+      const bookId = document.getElementById('manual-book-id').value;
+      const borrowerName = document.getElementById('manual-borrower-name').value.trim();
+      const borrowerEmail = document.getElementById('manual-borrower-email').value.trim().toLowerCase();
+
+      const book = getBookById(bookId);
+      if (!book || getAvailableCopies(book) <= 0) {
+        showToast('Selected book is unavailable.', 'error');
+        return;
+      }
+
+      if (hasUserBorrowedBook(borrowerEmail, bookId)) {
+        showToast(`${borrowerName} already has an active loan for this title.`, 'error');
+        return;
+      }
+
+      const newLoan = {
+        id: 'ln-' + Date.now().toString().slice(-5),
+        bookId: book.id,
+        borrowerName,
+        borrowerEmail,
+        borrowDate: getOffsetDateISO(0),
+        dueDate: getOffsetDateISO(14),
+        returnDate: null,
+        status: 'active'
+      };
+
+      appState.loans.unshift(newLoan);
+      saveLoans();
+      closeModal();
+      renderApp();
+      showToast(`Issued "${book.title}" to ${borrowerName}.`, 'success');
+    }
+
+    /**
+     * ============================================================================
+     * RENDER VIEWS
+     * ============================================================================
+     */
+    function renderApp() {
+      const navbar = document.getElementById('app-navbar');
+      const root = document.getElementById('app-root');
+
+      if (!appState.session) {
+        navbar.classList.add('hidden');
+        root.innerHTML = renderLoginScreen();
+        lucide.createIcons({ root });
+        return;
+      }
+
+      // Configure Top Navigation Bar
+      navbar.classList.remove('hidden');
+      document.getElementById('nav-user-name').textContent = appState.session.name;
+      document.getElementById('nav-user-email').textContent = appState.session.email;
+
+      const roleBadge = document.getElementById('nav-role-badge');
+      if (appState.session.role === 'staff') {
+        roleBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80';
+        roleBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Store Staff`;
+        root.innerHTML = renderStaffPortal();
+      } else {
+        roleBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80';
+        roleBadge.innerHTML = `<i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i> Borrower`;
+        root.innerHTML = renderBorrowerPortal();
+      }
+
+      lucide.createIcons({ root });
+      lucide.createIcons({ root: navbar });
+    }
+
+    /**
+     * 1. LOGIN & ROLE-SELECTION SCREEN
+     */
+    function renderLoginScreen() {
+      const isBorrower = appState.loginTab === 'borrower';
+
+      return `
+        <div class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-b from-slate-50 to-slate-100/80">
+          <div class="w-full max-w-md animate-fade-in">
+            <!-- Header Brand -->
+            <div class="text-center mb-6">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-600/20 mb-3.5">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+              </div>
+              <h1 class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">Athenaeum Mini LMS</h1>
+              <p class="text-sm text-slate-500 mt-1">Modern Academic Library Catalog &amp; Circulation Portal</p>
+            </div>
+
+            <!-- Main Login Card -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-soft overflow-hidden">
+              <!-- Role Selector Segmented Tabs -->
+              <div class="p-2 bg-slate-100/80 border-b border-slate-200/70 grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="switchLoginRoleTab('borrower')"
+                  class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${isBorrower ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                  <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                  Borrower Portal
+                </button>
+                <button type="button" onclick="switchLoginRoleTab('staff')"
+                  class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${!isBorrower ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  Store Staff
+                </button>
+              </div>
+
+              <div class="p-6 sm:p-7">
+                <!-- Quick Demo Login Banner -->
+                <div class="mb-6">
+                  <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Instant Demo Access</span>
+                    <span class="text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">1-Click Sign In</span>
+                  </div>
+                  <div class="grid grid-cols-1 gap-2.5">
+                    <button type="button" onclick="demoLogin('borrower')"
+                      class="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-indigo-200/80 bg-indigo-50/50 hover:bg-indigo-50 text-left transition-all group cursor-pointer">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">AR</div>
+                        <div>
+                          <span class="block text-xs font-bold text-slate-900 group-hover:text-indigo-700">Demo Login as Borrower: Alex Rivera</span>
+                          <span class="block text-[11px] text-slate-500">Browse catalog, borrow &amp; return books</span>
+                        </div>
+                      </div>
+                      <i data-lucide="arrow-right" class="w-4 h-4 text-indigo-500 group-hover:translate-x-0.5 transition-transform"></i>
+                    </button>
+
+                    <button type="button" onclick="demoLogin('staff')"
+                      class="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-50 text-left transition-all group cursor-pointer">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">SJ</div>
+                        <div>
+                          <span class="block text-xs font-bold text-slate-900 group-hover:text-emerald-700">Demo Login as Staff: Sarah Jenkins</span>
+                          <span class="block text-[11px] text-slate-500">Manage inventory, stock &amp; circulation logs</span>
+                        </div>
+                      </div>
+                      <i data-lucide="arrow-right" class="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition-transform"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="relative my-5">
+                  <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                  <div class="relative flex justify-center text-xs">
+                    <span class="px-2.5 bg-white text-slate-400 font-medium">or sign in with credentials</span>
+                  </div>
+                </div>
+
+                <!-- Standard Login Form -->
+                <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name (Optional)</label>
+                    <input id="login-name" type="text" placeholder="${isBorrower ? 'Alex Rivera' : 'Sarah Jenkins'}"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Institutional Email</label>
+                    <input id="login-email" type="email" required
+                      value="${isBorrower ? 'alex.rivera@university.edu' : 'sarah.jenkins@athenaeum.edu'}"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+                    <input id="login-password" type="password" required value="••••••••••••"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                  </div>
+                  <button type="submit"
+                    class="w-full mt-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white shadow-xs transition-colors cursor-pointer ${isBorrower ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}">
+                    Sign In as ${isBorrower ? 'Borrower' : 'Store Staff'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * 2. BORROWER PORTAL VIEW
+     */
+    function renderBorrowerPortal() {
+      const userLoans = appState.loans.filter(
+        l => l.borrowerEmail.toLowerCase() === appState.session.email.toLowerCase()
+      );
+      const activeUserLoans = userLoans.filter(l => l.status === 'active');
+
+      return `
+        <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
+          <!-- Page Header & Sub-navigation Tabs -->
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900 tracking-tight">Student Library Portal</h1>
+              <p class="text-sm text-slate-500 mt-0.5">Explore available titles, place 14-day loans, and manage your active checkouts.</p>
+            </div>
+
+            <!-- View Switcher Pills -->
+            <div class="inline-flex p-1 rounded-xl bg-slate-200/70 self-start">
+              <button onclick="setBorrowerView('catalog')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${appState.borrowerView === 'catalog' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                <i data-lucide="library" class="w-4 h-4 text-indigo-600"></i>
+                Browse Catalog
+              </button>
+              <button onclick="setBorrowerView('my-books')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${appState.borrowerView === 'my-books' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                <i data-lucide="bookmark-check" class="w-4 h-4 text-emerald-600"></i>
+                My Borrowed Books
+                <span class="px-2 py-0.5 text-[11px] rounded-full ${activeUserLoans.length > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-300 text-slate-700'}">
+                  ${activeUserLoans.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Borrower Body -->
+          <div id="borrower-dynamic-body" class="mt-6">
+            ${appState.borrowerView === 'catalog' ? renderBorrowerCatalogSection() : renderBorrowerLoansSection()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBorrowerContent() {
+      const container = document.getElementById('borrower-dynamic-body');
+      if (!container) return;
+      container.innerHTML = appState.borrowerView === 'catalog'
+        ? renderBorrowerCatalogSection()
+        : renderBorrowerLoansSection();
+      lucide.createIcons({ root: container });
+    }
+
+    function renderBorrowerCatalogSection() {
+      const categories = ['All', 'Technology', 'Fiction', 'Science', 'Design', 'History'];
+      const query = appState.searchQuery.toLowerCase().trim();
+
+      const filteredBooks = appState.books.filter(book => {
+        const matchesCat = appState.selectedCategory === 'All' || book.category === appState.selectedCategory;
+        const matchesSearch = !query ||
+          book.title.toLowerCase().includes(query) ||
+          book.author.toLowerCase().includes(query) ||
+          book.isbn.toLowerCase().includes(query);
+        return matchesCat && matchesSearch;
+      });
+
+      return `
+        <!-- Search & Category Filter Bar -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <!-- Search Input -->
+          <div class="relative w-full lg:max-w-md">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" value="${escapeHTML(appState.searchQuery)}"
+              oninput="handleCatalogSearch(this.value)"
+              placeholder="Search by title, author, or ISBN..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200/90 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+          </div>
+
+          <!-- Category Pills -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            ${categories.map(cat => {
+              const active = appState.selectedCategory === cat;
+              return `
+                <button onclick="handleCategoryFilter('${cat}')"
+                  class="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${active ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200/80 hover:border-slate-300 hover:text-slate-900'}">
+                  ${cat}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Catalog Results Grid -->
+        ${filteredBooks.length === 0 ? `
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="search-x" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900">No matching books found</h3>
+            <p class="text-sm text-slate-500 mt-1">Try adjusting your search keywords or selecting "All" categories.</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            ${filteredBooks.map(book => {
+              const available = getAvailableCopies(book);
+              const alreadyBorrowed = hasUserBorrowedBook(appState.session.email, book.id);
+              const style = CATEGORY_STYLES[book.category] || CATEGORY_STYLES['Technology'];
+
+              let statusPill = '';
+              if (available > 0) {
+                statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  ${available} of ${book.totalCopies} available
+                </span>`;
+              } else {
+                statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  0 of ${book.totalCopies} available
+                </span>`;
+              }
+
+              let actionButton = '';
+              if (alreadyBorrowed) {
+                actionButton = `
+                  <button disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                    Checked Out by You
+                  </button>`;
+              } else if (available > 0) {
+                actionButton = `
+                  <button onclick="promptBorrowBook('${book.id}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    Borrow Book
+                  </button>`;
+              } else {
+                actionButton = `
+                  <button disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-100 text-slate-400 border border-slate-200/80 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                    All Copies Loaned
+                  </button>`;
+              }
+
+              return `
+                <article class="bg-white rounded-2xl border border-slate-200/90 shadow-card book-card-hover flex flex-col overflow-hidden">
+                  <!-- Editorial Cover Art Placeholder -->
+                  <div class="h-36 bg-gradient-to-br ${style.gradient} p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="flex items-center justify-between z-10">
+                      <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white backdrop-blur-xs border border-white/20">
+                        ${escapeHTML(book.category)}
+                      </span>
+                      <div class="w-7 h-7 rounded-lg bg-white/15 text-white flex items-center justify-center backdrop-blur-xs">
+                        <i data-lucide="${style.icon}" class="w-3.5 h-3.5"></i>
+                      </div>
+                    </div>
+                    <p class="font-display font-bold text-white text-sm leading-snug line-clamp-2 z-10 drop-shadow-xs">
+                      ${escapeHTML(book.title)}
+                    </p>
+                    <!-- Decorative spine line -->
+                    <div class="absolute inset-y-0 left-0 w-2 bg-black/20"></div>
+                  </div>
+
+                  <!-- Book Details Body -->
+                  <div class="p-4 flex-1 flex flex-col">
+                    <div class="mb-2">
+                      ${statusPill}
+                    </div>
+                    <h3 class="font-display font-bold text-slate-900 text-base leading-snug line-clamp-2" title="${escapeHTML(book.title)}">
+                      ${escapeHTML(book.title)}
+                    </h3>
+                    <p class="text-xs font-medium text-slate-600 mt-1">${escapeHTML(book.author)}</p>
+                    <p class="text-[11px] font-mono text-slate-400 mt-1.5">ISBN: ${escapeHTML(book.isbn)}</p>
+
+                    <div class="mt-auto pt-4">
+                      ${actionButton}
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    function renderBorrowerLoansSection() {
+      const userLoans = appState.loans.filter(
+        l => l.borrowerEmail.toLowerCase() === appState.session.email.toLowerCase()
+      );
+      const activeLoans = userLoans.filter(l => l.status === 'active');
+      const pastLoans = userLoans.filter(l => l.status === 'returned');
+
+      return `
+        <div class="space-y-8">
+          <!-- Active Loans Section -->
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
+                Currently Checked Out
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">${activeLoans.length}</span>
+              </h2>
+            </div>
+
+            ${activeLoans.length === 0 ? `
+              <div class="bg-white rounded-2xl border border-slate-200/80 p-8 text-center">
+                <p class="text-sm font-medium text-slate-700">You don't have any active borrowed books right now.</p>
+                <button onclick="setBorrowerView('catalog')" class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer">
+                  Browse Library Catalog
+                </button>
+              </div>
+            ` : `
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${activeLoans.map(loan => {
+                  const book = getBookById(loan.bookId);
+                  const daysLeft = getDaysRemaining(loan.dueDate);
+                  const isOverdue = daysLeft < 0;
+
+                  return `
+                    <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-card flex flex-col justify-between gap-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">${book ? escapeHTML(book.category) : 'Book'}</span>
+                          <h3 class="font-display font-bold text-base text-slate-900 mt-0.5">${book ? escapeHTML(book.title) : 'Unknown Title'}</h3>
+                          <p class="text-xs text-slate-500">${book ? escapeHTML(book.author) : ''}</p>
+                        </div>
+                        ${isOverdue ? `
+                          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                            Overdue by ${Math.abs(daysLeft)}d
+                          </span>
+                        ` : `
+                          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left
+                          </span>
+                        `}
+                      </div>
+
+                      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                        <div class="flex items-center gap-4 text-xs text-slate-500">
+                          <span>Borrowed: <strong class="text-slate-700">${formatDisplayDate(loan.borrowDate)}</strong></span>
+                          <span>Due: <strong class="${isOverdue ? 'text-rose-600' : 'text-slate-700'}">${formatDisplayDate(loan.dueDate)}</strong></span>
+                        </div>
+                        <button onclick="returnLoan('${loan.id}')"
+                          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-emerald-600 text-white transition-colors cursor-pointer">
+                          <i data-lucide="corner-up-left" class="w-3.5 h-3.5"></i>
+                          Return Book
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </section>
+
+          <!-- Return History Section -->
+          <section>
+            <h2 class="font-display font-bold text-lg text-slate-900 mb-3">Reading &amp; Return History</h2>
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
+              ${pastLoans.length === 0 ? `
+                <div class="p-6 text-center text-sm text-slate-500">No returned books in your history yet.</div>
+              ` : `
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-4">Book Title</th>
+                        <th class="py-3 px-4">Borrowed Date</th>
+                        <th class="py-3 px-4">Returned Date</th>
+                        <th class="py-3 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                      ${pastLoans.map(loan => {
+                        const book = getBookById(loan.bookId);
+                        return `
+                          <tr class="hover:bg-slate-50/60">
+                            <td class="py-3.5 px-4 font-semibold text-slate-800">${book ? escapeHTML(book.title) : 'Archived Title'}</td>
+                            <td class="py-3.5 px-4 text-slate-500 text-xs">${formatDisplayDate(loan.borrowDate)}</td>
+                            <td class="py-3.5 px-4 text-slate-500 text-xs">${formatDisplayDate(loan.returnDate)}</td>
+                            <td class="py-3.5 px-4">
+                              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                Returned
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `}
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    /**
+     * 3. STORE STAFF (LIBRARIAN) PORTAL VIEW
+     */
+    function renderStaffPortal() {
+      // Calculate Live KPI Metrics
+      const totalTitles = appState.books.length;
+      const totalCopies = appState.books.reduce((sum, b) => sum + b.totalCopies, 0);
+      const checkedOutCount = appState.loans.filter(l => l.status === 'active').length;
+      const availableCopies = Math.max(0, totalCopies - checkedOutCount);
+
+      return `
+        <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
+          <!-- Staff Header -->
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80">
+            <div>
+              <h1 class="font-display font-bold text-2xl text-slate-900 tracking-tight">Library Operations &amp; Inventory</h1>
+              <p class="text-sm text-slate-500 mt-0.5">Manage catalog stock, monitor active student loans, and process circulation returns.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button onclick="openManualCheckoutModal()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-800 hover:bg-slate-50 border border-slate-200 shadow-2xs transition-colors cursor-pointer">
+                <i data-lucide="user-plus" class="w-4 h-4 text-emerald-600"></i>
+                Manual Checkout
+              </button>
+              <button onclick="openAddBookModal()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Add New Book
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Overview Metrics Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-card">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Catalog Titles</span>
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <i data-lucide="book-copy" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <p class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2">${totalTitles}</p>
+              <p class="text-[11px] text-slate-400 mt-1">Unique ISBN entries</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-card">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Total Copies</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <p class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2">${totalCopies}</p>
+              <p class="text-[11px] text-slate-400 mt-1">Physical library stock</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-card">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Checked Out</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <i data-lucide="clock" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <p class="font-display font-extrabold text-2xl sm:text-3xl text-amber-600 mt-2">${checkedOutCount}</p>
+              <p class="text-[11px] text-slate-400 mt-1">Active borrower loans</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-card">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Available Now</span>
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <p class="font-display font-extrabold text-2xl sm:text-3xl text-emerald-600 mt-2">${availableCopies}</p>
+              <p class="text-[11px] text-slate-400 mt-1">Ready on shelves</p>
+            </div>
+          </div>
+
+          <!-- Staff Navigation Tabs -->
+          <div class="flex items-center justify-between flex-wrap gap-4 mb-5">
+            <div class="inline-flex p-1 rounded-xl bg-slate-200/70">
+              <button onclick="setStaffView('inventory')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${appState.staffView === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                <i data-lucide="database" class="w-4 h-4 text-indigo-600"></i>
+                Inventory Management
+              </button>
+              <button onclick="setStaffView('circulation')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${appState.staffView === 'circulation' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                <i data-lucide="arrow-left-right" class="w-4 h-4 text-emerald-600"></i>
+                Circulation &amp; Loans Log
+                <span class="px-2 py-0.5 text-[11px] rounded-full bg-amber-100 text-amber-800 font-bold">
+                  ${checkedOutCount}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Staff Active Tab Body -->
+          <div id="staff-dynamic-body">
+            ${appState.staffView === 'inventory' ? renderStaffInventoryTab() : renderStaffCirculationTab()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStaffContent() {
+      const container = document.getElementById('staff-dynamic-body');
+      if (!container) return;
+      container.innerHTML = appState.staffView === 'inventory'
+        ? renderStaffInventoryTab()
+        : renderStaffCirculationTab();
+      lucide.createIcons({ root: container });
+    }
+
+    function renderStaffInventoryTab() {
+      const query = appState.staffSearchQuery.toLowerCase().trim();
+      const filteredBooks = appState.books.filter(book =>
+        !query ||
+        book.title.toLowerCase().includes(query) ||
+        book.author.toLowerCase().includes(query) ||
+        book.isbn.toLowerCase().includes(query) ||
+        book.category.toLowerCase().includes(query)
+      );
+
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
+          <!-- Table Toolbar -->
+          <div class="p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="relative w-full sm:max-w-sm">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input type="text" value="${escapeHTML(appState.staffSearchQuery)}"
+                oninput="handleStaffSearch(this.value)"
+                placeholder="Filter inventory by title, ISBN, category..."
+                class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+            </div>
+            <span class="text-xs text-slate-500">Showing <strong class="text-slate-800">${filteredBooks.length}</strong> of ${appState.books.length} titles</span>
+          </div>
+
+          <!-- Inventory Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th class="py-3.5 px-4">Book &amp; Author</th>
+                  <th class="py-3.5 px-4">Category</th>
+                  <th class="py-3.5 px-4">ISBN</th>
+                  <th class="py-3.5 px-4">Stock Status</th>
+                  <th class="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                ${filteredBooks.length === 0 ? `
+                  <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-500">No books match your inventory filter.</td>
+                  </tr>
+                ` : filteredBooks.map(book => {
+                  const available = getAvailableCopies(book);
+                  const style = CATEGORY_STYLES[book.category] || CATEGORY_STYLES['Technology'];
+
+                  return `
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                      <td class="py-3.5 px-4">
+                        <p class="font-bold text-slate-900">${escapeHTML(book.title)}</p>
+                        <p class="text-xs text-slate-500">${escapeHTML(book.author)}</p>
+                      </td>
+                      <td class="py-3.5 px-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style.badge}">
+                          ${escapeHTML(book.category)}
+                        </span>
+                      </td>
+                      <td class="py-3.5 px-4 font-mono text-xs text-slate-500">${escapeHTML(book.isbn)}</td>
+                      <td class="py-3.5 px-4">
+                        <div class="flex items-center gap-2">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${available > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : 'bg-amber-50 text-amber-700 border border-amber-200/80'}">
+                            ${available} / ${book.totalCopies} avail.
+                          </span>
+                        </div>
+                      </td>
+                      <td class="py-3.5 px-4 text-right">
+                        <div class="inline-flex items-center justify-end gap-1.5">
+                          <button onclick="openEditCopiesModal('${book.id}')"
+                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 transition-colors cursor-pointer" title="Edit Stock Copies">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            Edit Stock
+                          </button>
+                          <button onclick="promptDeleteBook('${book.id}')"
+                            class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="Delete Book">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStaffCirculationTab() {
+      const filteredLoans = appState.loans.filter(loan => {
+        if (appState.loanFilter === 'active') return loan.status === 'active';
+        if (appState.loanFilter === 'returned') return loan.status === 'returned';
+        return true;
+      });
+
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
+          <!-- Filter Bar -->
+          <div class="p-4 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-1.5">
+              <button onclick="setLoanFilter('all')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${appState.loanFilter === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}">
+                All Records (${appState.loans.length})
+              </button>
+              <button onclick="setLoanFilter('active')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${appState.loanFilter === 'active' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}">
+                Active Loans (${appState.loans.filter(l => l.status === 'active').length})
+              </button>
+              <button onclick="setLoanFilter('returned')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${appState.loanFilter === 'returned' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}">
+                Returned (${appState.loans.filter(l => l.status === 'returned').length})
+              </button>
+            </div>
+          </div>
+
+          <!-- Circulation Log Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th class="py-3.5 px-4">Book Title</th>
+                  <th class="py-3.5 px-4">Borrower</th>
+                  <th class="py-3.5 px-4">Checkout / Due</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4 text-right">Staff Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                ${filteredLoans.length === 0 ? `
+                  <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-500">No circulation logs in this view.</td>
+                  </tr>
+                ` : filteredLoans.map(loan => {
+                  const book = getBookById(loan.bookId);
+                  const daysLeft = getDaysRemaining(loan.dueDate);
+                  const isOverdue = loan.status === 'active' && daysLeft < 0;
+
+                  let statusBadge = '';
+                  if (loan.status === 'returned') {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                      Returned (${formatDisplayDate(loan.returnDate)})
+                    </span>`;
+                  } else if (isOverdue) {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+                      Overdue (${Math.abs(daysLeft)}d)
+                    </span>`;
+                  } else {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                      Checked Out
+                    </span>`;
+                  }
+
+                  return `
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                      <td class="py-3.5 px-4">
+                        <p class="font-bold text-slate-900">${book ? escapeHTML(book.title) : 'Deleted Title'}</p>
+                        <p class="text-[11px] font-mono text-slate-400">Loan ID: ${escapeHTML(loan.id)}</p>
+                      </td>
+                      <td class="py-3.5 px-4">
+                        <p class="font-semibold text-slate-800">${escapeHTML(loan.borrowerName)}</p>
+                        <p class="text-xs text-slate-500">${escapeHTML(loan.borrowerEmail)}</p>
+                      </td>
+                      <td class="py-3.5 px-4 text-xs text-slate-600">
+                        <div>Out: <span class="font-medium">${formatDisplayDate(loan.borrowDate)}</span></div>
+                        <div>Due: <span class="font-semibold ${isOverdue ? 'text-rose-600' : 'text-slate-800'}">${formatDisplayDate(loan.dueDate)}</span></div>
+                      </td>
+                      <td class="py-3.5 px-4">${statusBadge}</td>
+                      <td class="py-3.5 px-4 text-right">
+                        ${loan.status === 'active' ? `
+                          <button onclick="returnLoan('${loan.id}')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors cursor-pointer">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            Mark Returned
+                          </button>
+                        ` : `
+                          <span class="text-xs text-slate-400 font-medium">Completed</span>
+                        `}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderApp();
+    });
+  </script>
+</body>
+</html>
